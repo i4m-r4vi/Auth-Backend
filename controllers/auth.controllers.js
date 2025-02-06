@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import AuthModel from '../models/auth.models.js';
+import { generateWebToken } from '../utils/generateToken.js';
 
 export const signUp = async (req, res) => {
     try {
@@ -39,9 +40,22 @@ export const signIn = async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Incorrect password." });
         }
+        generateWebToken(user._id,res)
         res.status(200).json({ message: "Successfully signed in." });
     } catch (error) {
         console.error("Error occurred during sign-in:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 };
+
+export const me = (req,res)=>{
+    try {
+        res.send(`<h1>Welcome ${req.user.username}</h1>`)
+    } catch (error) {
+        console.error("Error occurred during me:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+
+}
+
+

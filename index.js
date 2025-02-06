@@ -3,13 +3,16 @@ import dotenv from 'dotenv'
 import connectDB from './db/db.js'
 import AuthRoutes from './routes/auth.routes.js'
 import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
 
 const app = express()
 dotenv.config()
 
 app.use(express.json())
+app.use(cookieParser())
 app.use(bodyParser.urlencoded({extended:true}))
 app.use('/api/auth',AuthRoutes);
+
 
 
 app.get('/',(req,res)=>{
