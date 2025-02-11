@@ -13,12 +13,6 @@ const Authschema = new mongoose.Schema({
     emailId:{
         type:String,
         required:true
-    },
-    resetPasswordToken:{
-        type:String
-    },
-    resetPasswordExpires:{
-        type:Date
     }
 },{timestamps:true})
 

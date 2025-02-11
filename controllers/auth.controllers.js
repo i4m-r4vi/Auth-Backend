@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import AuthModel from '../models/auth.models.js';
 import { generateWebToken } from '../utils/generateToken.js';
+import jwt from 'jsonwebtoken'
+import nodemailer from 'nodemailer'
 
 export const signUp = async (req, res) => {
     try {
@@ -56,6 +58,69 @@ export const me = (req,res)=>{
         res.status(500).json({ message: "Internal server error." });
     }
 
+}
+
+export const forgotPasswordRequest = async (req,res)=>{
+    try {
+        const {email} = req.body;
+        const user = await AuthModel.findOne({emailId:email});
+        const secret = process.env.JWT_KEY + user.password;
+        const token = jwt.sign({id:user._id,username:user.username},secret,{expiresIn:'1m'});
+        const resetUrl = `http://127.0.0.1:5000/api/auth/forgotPassword/${user._id}/${token}`
+        const transporter = await nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth:{
+                user:`${process.env.EMAIL}`,
+                pass:`${process.env.PASS}`
+            }
+        })
+        const msgOptions = {
+            from: process.env.EMAIL,
+            to: user.emailId,
+            subject: 'Password Reset Request',
+            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+            Please click on the following link, or paste this into your browser to complete the process:\n\n
+            ${resetUrl}\n\n
+            If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+          };
+        await transporter.sendMail(msgOptions,(err,info)=>{
+            if (err) {
+                console.log(err);
+                return;
+            }
+            res.status(200).json({ message: `Password reset link sent`});
+            transporter.close();
+
+        })
+        
+    } catch (error) {
+        console.error("Error occurred during ForogtPasswordRequest Error:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+}
+
+export const updatePassowrd = async(req,res)=>{
+    try {
+        const {id,token} = req.params;
+        const { newPassword } = req.body;
+        const user = await AuthModel.findOne({_id:id})
+        const secret = process.env.JWT_KEY + user.password
+        try {
+            jwt.verify(token,secret)
+        } catch (error) {
+            return res.status(404).json({message:"Invalid Token"})
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save()
+        res.status(200).json({message:"Password Successfully Changed"})
+        
+    } catch (error) {
+        console.error("Error occurred during ForgotPasswordRequest:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
 }
 
 
